@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:agentic_placeholder_attester/injection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:injectable/injectable.dart';
@@ -14,10 +15,11 @@ import '../pages/qr_scan_page.dart';
 import '../utils/dart_defines.dart';
 import '../utils/network_utils.dart';
 import '../utils/string_constants.dart';
+import 'barcode_scanner_store.dart';
 
 part 'service_controller.g.dart';
 
-@lazySingleton
+@LazySingleton()
 class ServiceController = _ServiceController with _$ServiceController;
 
 abstract class _ServiceController with Store {
@@ -216,36 +218,36 @@ abstract class _ServiceController with Store {
     appKitModal!.onModalDisconnect.subscribe(_onModalDisconnect);
     appKitModal!.onModalError.subscribe(_onModalError);
 
-    // Prepare the pages.
     pageDatas = [
       PageData(
-        page: const BarcodeScannerWithOverlay(
-          // BarcodeScannerWithOverlay is defined in qr_scan_page.dart.
-          // Pass the required parameters.
+        page: BarcodeScannerWithOverlay(
+          store: getIt<BarcodeScannerStore>(),
+
           linkMode: false,
-          reinitialize: null,
-          // The reinitialize callback will be provided below.
-          appKitModalPlaceholder: true, // dummy flag for illustration
+
+          appKitModal: appKitModal!,
+          reinitialize: (bool linkMode) {
+            return true;
+          }, // dummy flag for illustration
         ),
         title: StringConstants.scanPageTitle,
         icon: Icons.qr_code,
       ),
       PageData(
-        page: PairingsPage(appKitModal: appKitModal!),
+        page: PairingsPage(
+          appKitModal: appKitModal!,
+        ),
         title: StringConstants.pairingsPageTitle,
         icon: Icons.vertical_align_center_rounded,
       ),
     ];
 
-    // Initialize the modal.
     await appKitModal!.init();
     await _registerEventHandlers();
 
-    // Initialize deep link handling.
     DeepLinkHandler.init(appKitModal!);
     DeepLinkHandler.checkInitialLink();
 
-    // Register chain event handlers.
     final allChains = ReownAppKitModalNetworks.getAllSupportedNetworks();
     for (final chain in allChains) {
       final namespace =
@@ -290,7 +292,7 @@ abstract class _ServiceController with Store {
   }
 
   void _setState(dynamic _) {
-    // (This example does not update local state; you can add any needed reactions here.)
+    debugPrint('[SampleDapp] _setState');
   }
 
   void _relayClientError(ErrorEvent? event) {
@@ -299,7 +301,6 @@ abstract class _ServiceController with Store {
 
   void _onSessionPing(SessionPing? args) {
     debugPrint('[SampleDapp] _onSessionPing $args');
-    // You could show a dialog or update UI via another controller.
   }
 
   void _onSessionEvent(SessionEvent? args) {

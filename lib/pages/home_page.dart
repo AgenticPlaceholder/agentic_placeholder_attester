@@ -1,3 +1,4 @@
+import 'package:agentic_placeholder_attester/injection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_mobx/flutter_mobx.dart';
 import 'package:provider/provider.dart';
@@ -20,8 +21,8 @@ class _HomePageState extends State<HomePage> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    serviceController = Provider.of<ServiceController>(context);
-    navigationController = Provider.of<NavigationController>(context);
+    serviceController = getIt<ServiceController>();
+    navigationController = getIt<NavigationController>();
     if (!serviceController.initialized) {
       serviceController.initializeService(context);
     }

@@ -4,7 +4,7 @@ import 'package:mobx/mobx.dart';
 part 'navigation_controller.g.dart';
 
 
-@lazySingleton
+@LazySingleton()
 class NavigationController = _NavigationController with _$NavigationController;
 
 abstract class _NavigationController with Store {
