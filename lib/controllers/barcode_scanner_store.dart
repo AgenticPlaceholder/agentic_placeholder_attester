@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:dio/dio.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:injectable/injectable.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:mobx/mobx.dart';
@@ -24,18 +25,22 @@ abstract class _BarcodeScannerStore with Store {
 
   _BarcodeScannerStore()
       : controller = MobileScannerController(
-    formats: const [BarcodeFormat.qrCode],
-    autoStart: true,
-    torchEnabled: false,
-    useNewCameraSelector: true,
-  ) {
+          formats: const [BarcodeFormat.qrCode],
+          autoStart: true,
+          torchEnabled: false,
+          useNewCameraSelector: true,
+        ) {
     // Subscribe to barcode scanning events.
     _subscription = controller.barcodes.listen((capture) {
       if (capture.barcodes.isNotEmpty) {
         setQrPayload(capture.barcodes.first.displayValue ?? '');
+      } else {
+        setQrPayload('');
       }
     });
   }
+
+  TextEditingController commentController = TextEditingController();
 
   @observable
   double rating = 0;
@@ -67,7 +72,6 @@ abstract class _BarcodeScannerStore with Store {
     userWalletAddress = address;
   }
 
-
   @action
   void handleSessionConnect(SessionConnect? event) {
     if (event != null) {
@@ -75,14 +79,15 @@ abstract class _BarcodeScannerStore with Store {
     }
   }
 
-
   @action
-  Future<bool> submitRating(String chainId, ReownAppKitModal appKitModal, double ratingValue) async {
+  Future<bool> submitRating(
+      String chainId, ReownAppKitModal appKitModal, double ratingValue) async {
     isSubmitting = true;
 
     // If a chain is selected, update the wallet address accordingly.
     if (chainId.isNotEmpty) {
-      final namespace = ReownAppKitModalNetworks.getNamespaceForChainId(chainId);
+      final namespace =
+          ReownAppKitModalNetworks.getNamespaceForChainId(chainId);
       userWalletAddress = appKitModal.session?.getAddress(namespace) ?? '';
     }
 
@@ -95,26 +100,30 @@ abstract class _BarcodeScannerStore with Store {
     try {
       // Generate the message to sign.
       final message = json.encode({
-        "publisherAddress": qrPayload,
+        "adId": fetchQRSataSeperately(qrPayload, 1),
+        "operatorAddress": "0xecba9756092b7851f4918ec6bab2085b8f88b8ff",
+        "publisherAddress": fetchQRSataSeperately(qrPayload, 0),
         "userAddress": userWalletAddress,
-        "rating": ratingValue.toInt(),
+        "rating": ratingValue.round(),
+        "comment": commentController.text,
+        "signature": "0x789ghi"
       });
 
       // In a real app, call your signing method here.
-      final signature = "0x1234567890";
+      // final signature = "0x1234567890";
 
       final headers = {'Content-Type': 'application/json'};
-      final data = json.encode({
-        "publisherAddress": qrPayload,
-        "userAddress": userWalletAddress,
-        "rating": ratingValue.toInt(),
-        "signature": signature,
-      });
+      // final data = json.encode({
+      //   "publisherAddress": qrPayload,
+      //   "userAddress": userWalletAddress,
+      //   "rating": ratingValue.toInt(),
+      //   "signature": signature,
+      // });
       final dio = Dio();
       final response = await dio.post(
-        'https://liz4000.athelstantechnolabs.com/api/attestation',
+        'https://placeholder.taraxio.com/api/user/attest',
         options: Options(headers: headers),
-        data: data,
+        data: message,
       );
 
       if (response.statusCode == 200) {
@@ -140,5 +149,10 @@ abstract class _BarcodeScannerStore with Store {
   void dispose() {
     _subscription?.cancel();
     controller.dispose();
+  }
+
+  @action
+  String fetchQRSataSeperately(String qrData, int index) {
+    return qrData.split(',')[index];
   }
 }
